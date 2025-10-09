@@ -65,7 +65,7 @@ const upload_product = async(req , res)=>{
     const thumnailImage = await cloudinary.uploader.upload(
         req.files.thumnailImage[0].path, {
             public_id : generateOTPNumber(),
-            folder : "thumnail Image"
+            folder : "thumbnailImage"
         })
         fs.unlink(req.files.thumnailImage[0].path, (err)=>{
             if(err){res.send(err)}});
@@ -76,7 +76,7 @@ const upload_product = async(req , res)=>{
         const CloudinaryItems = await cloudinary.uploader.upload(
         item.path, {
             public_id : generateOTPNumber(),
-            folder : "Product SubImage"
+            folder : "SubImage"
         })
         fs.unlink(item.path, (err)=>{
             if(err){res.send(err)} 
@@ -104,6 +104,47 @@ const upload_product = async(req , res)=>{
     
     res.send('Product Added')
 }
+// ====================================== Update Product ============================ //
+
+const updateProduct =async (req, res)=>{
+    const { productTitle, productTag, productDiscription, productPrice, discountPercent,  productCatagory, stock, varient, slug } = req.body
+    
+    
+    const ExistProduct = await productSchema.findOne({slug})
+    
+    if(!ExistProduct) return res.status(404).send('Product Not Found')
+        
+    if(productTitle) ExistProduct.productTitle = productTitle
+    
+    if(productTitle) ExistProduct.slug = generateSlug(productTitle)    
+
+    if(productTag) ExistProduct.productTag = productTag    
+
+    if(productDiscription) ExistProduct.productDiscription = productDiscription    
+
+    if(productPrice) ExistProduct.productPrice = productPrice    
+
+    if(discountPercent) ExistProduct.discountPercent = discountPercent    
+
+    if(discountPercent) ExistProduct.discountPrice = (productPrice - (productPrice* (discountPercent / 100)))  
+    
+    if(productCatagory) ExistProduct.productCatagory = productCatagory    
+    
+    if(stock) ExistProduct.stock = stock    
+
+    if(varient) ExistProduct.varient = JSON.parse(varient)    
+
+    
+    await ExistProduct.save()
+
+    // await cloudinary.uploader.destroy(ExistProduct.thumnailImage.split('/').slice(7).join("/").split('.')[0])
+
+    // ExistProduct.subImage.map(async(item)=>{
+    //     await cloudinary.uploader.destroy(item.split('/').slice(7).join("/").split('.')[0])
+        
+    // })
+    res.send('done')
+}
 
 
-module.exports ={ add_catagory, upload_product}
+module.exports ={ add_catagory, upload_product, updateProduct}
