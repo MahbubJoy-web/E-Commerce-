@@ -32,7 +32,7 @@ const productSchema = new mongoose.Schema({
         type : String,
         default : null
     },
-    adminApproval :{
+    status :{
         type : String,
         default : "pendding",
         enum : ["approved", "pendding", "rejected"]

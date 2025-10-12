@@ -4,6 +4,7 @@ const authSchema = require('../model/authSchema');
 const catagorySchema = require('../model/catagorySchema');
 const productSchema = require('../model/productSchema');
 const { generatePublicId, generateSlug, generateOTPNumber } = require('../helpers/allGenarator');
+const { log } = require('console');
 
 const cloudinary = require ('cloudinary').v2 
 
@@ -14,7 +15,7 @@ const cloudinary = require ('cloudinary').v2
         api_key: '446375346324896', 
         api_secret: 'n0YpcXgiAtby59lrAQT8lwcs7Os' // Click 'View API Keys' above to copy your API secret
     });
-// ====================== Add to Catagory ==================== //
+// ===================================== Add to Catagory =================================== //
 const add_catagory =async (req, res)=>{
     const {catagoryName } = req.body
 
@@ -53,8 +54,7 @@ const add_catagory =async (req, res)=>{
     
 }
 
-// ======================UploadProduct ====================== //
-
+// ======================================UploadProduct ==================================== //
 const upload_product = async(req , res)=>{
     const { productTitle, productTag, productDiscription, productPrice, discountPercent,  productCatagory, stock, varient } = req.body
     // ==============discount price calculation ============ //
@@ -104,47 +104,148 @@ const upload_product = async(req , res)=>{
     
     res.send('Product Added')
 }
-// ====================================== Update Product ============================ //
+// ====================================== Update Product ================================= //
 
-const updateProduct =async (req, res)=>{
-    const { productTitle, productTag, productDiscription, productPrice, discountPercent,  productCatagory, stock, varient, slug } = req.body
+// ====================================== Update Product ================================= //
+const updateProduct = async (req, res) => {
+  try {
+    const {
+      productTitle,
+      productTag,
+      productDiscription,
+      productPrice,
+      discountPercent,
+      productCatagory,
+      stock,
+      varient,
+      slug,
+    } = req.body;
+
+    const ExistProduct = await productSchema.findOne({ slug });
+
+    if (!ExistProduct) return res.status(404).send("Product Not Found");
+
+    // =================== THUMBNAIL IMAGE ===================
+    if (req.files?.thumnailImage) {
+      // 1️⃣ Delete old image from Cloudinary
+      if (ExistProduct.thumnailImage) {
+        const oldThumbnailPublicId = ExistProduct.thumnailImage
+          .split("/")
+          .slice(7)
+          .join("/")
+          .split(".")[0];
+        await cloudinary.uploader.destroy(oldThumbnailPublicId);
+      }
+
+      // 2️⃣ Upload new image
+      const uploadThumb = await cloudinary.uploader.upload(
+        req.files.thumnailImage[0].path,
+        {
+          public_id: generateOTPNumber(),
+          folder: "thumbnailImage",
+        }
+      );
+
+      // 3️⃣ Delete local file
+      fs.unlink(req.files.thumnailImage[0].path, (err) => {
+        if (err) console.log("File unlink error:", err);
+      });
+
+      // 4️⃣ Save new image URL
+      ExistProduct.thumnailImage = uploadThumb.url;
+    }
+
+    // =================== SUB IMAGES ===================
+    if (req.files?.subImage) {
+      // ==== Delete old sub images from Cloudinary
+      if (ExistProduct.subImage && ExistProduct.subImage.length > 0) {
+        await Promise.all(
+          ExistProduct.subImage.map(async (img) => {
+            const publicId = img.split("/").slice(7).join("/").split(".")[0];
+            await cloudinary.uploader.destroy(publicId);
+          })
+        );
+      }
+
+      // 2️⃣ Upload new sub images
+      const subImage = await Promise.all(
+        req.files.subImage.map(async (item) => {
+          const CloudinaryItems = await cloudinary.uploader.upload(item.path, {
+            public_id: generateOTPNumber(),
+            folder: "SubImage",
+          });
+          fs.unlink(item.path, (err) => {
+            if (err) console.log("File unlink error:", err);
+          });
+          return CloudinaryItems.url;
+        })
+      );
+
+      // 3️⃣ Save new subImage URLs
+      ExistProduct.subImage = subImage;
+    }
+
+    // =================== Updated DATA ===================
+    if (productTitle) {
+      ExistProduct.productTitle = productTitle;
+      ExistProduct.slug = generateSlug(productTitle);
+    }
+
+    if (productTag) ExistProduct.productTag = productTag;
+    if (productDiscription) ExistProduct.productDiscription = productDiscription;
+    if (productPrice) ExistProduct.productPrice = productPrice;
+    if (discountPercent) {
+      ExistProduct.discountPercent = discountPercent;
+      ExistProduct.discountPrice =
+        productPrice - productPrice * (discountPercent / 100);
+    }
+    if (productCatagory) ExistProduct.productCatagory = productCatagory;
+    if (stock) ExistProduct.stock = stock;
+    if (varient) ExistProduct.varient = JSON.parse(varient);
+
+    // =================== SAVE PRODUCT ===================
+    await ExistProduct.save();
+
+    res.status(200).send("Product Updated Successfully ✅");
+  }
+    catch (error) {
+    console.error("Update Product Error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+}
+// ====================================== Admin Approval ================================ //
+const adminApproval =async (req, res)=>{
+    const {slug, status} = req.body
+
+    if(status !== "approved" && status !== "rejected") return res.status(401).send("invaild Status")
     
-    
+    const updateProduct =await productSchema.findOne({slug})
+
+    if(!updateProduct) return res.status(404).send("Product Not Found")
+
+        updateProduct.status = status
+     updateProduct.save()
+     
+     res.status(200).send("Status Updated")
+}
+// ====================================== Customer Review =============================== //
+const CustomerReview = async(req, res)=>{
+    const {slug , reviewerName, reviewerRating, reviewerComment, }= req.body
+
     const ExistProduct = await productSchema.findOne({slug})
-    
-    if(!ExistProduct) return res.status(404).send('Product Not Found')
-        
-    if(productTitle) ExistProduct.productTitle = productTitle
-    
-    if(productTitle) ExistProduct.slug = generateSlug(productTitle)    
 
-    if(productTag) ExistProduct.productTag = productTag    
+    if(!ExistProduct) return res.status(404).send("Product Not Found")
 
-    if(productDiscription) ExistProduct.productDiscription = productDiscription    
-
-    if(productPrice) ExistProduct.productPrice = productPrice    
-
-    if(discountPercent) ExistProduct.discountPercent = discountPercent    
-
-    if(discountPercent) ExistProduct.discountPrice = (productPrice - (productPrice* (discountPercent / 100)))  
-    
-    if(productCatagory) ExistProduct.productCatagory = productCatagory    
-    
-    if(stock) ExistProduct.stock = stock    
-
-    if(varient) ExistProduct.varient = JSON.parse(varient)    
-
-    
+    ExistProduct.review.push({
+        reviewerName,
+        reviewerRating,
+        reviewerComment,
+        reviewerDate: new Date()
+    })   
     await ExistProduct.save()
-
-    // await cloudinary.uploader.destroy(ExistProduct.thumnailImage.split('/').slice(7).join("/").split('.')[0])
-
-    // ExistProduct.subImage.map(async(item)=>{
-    //     await cloudinary.uploader.destroy(item.split('/').slice(7).join("/").split('.')[0])
-        
-    // })
-    res.send('done')
+    
+    res.send("Review Added")
 }
 
 
-module.exports ={ add_catagory, upload_product, updateProduct}
+module.exports ={ add_catagory, upload_product, updateProduct,adminApproval, CustomerReview}

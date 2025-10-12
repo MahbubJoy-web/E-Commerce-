@@ -1,5 +1,5 @@
 const express = require('express')
-const { add_catagory, upload_product, updateProduct } = require('../../Controllers/productController')
+const { add_catagory, upload_product, updateProduct, adminApproval, CustomerReview } = require('../../Controllers/productController')
 const productRoute = express.Router()
 const multer = require('multer')
 const upload = multer({ dest: 'uploads/' })
@@ -9,7 +9,9 @@ const uploadMiddleware = upload.fields([{ name: 'thumnailImage', maxCount: 1 }, 
 
 productRoute.post('/addCatagory',tokenVerification, CheckUserRole(['admin' , 'staff']),upload.single('catagoryImage'), add_catagory)
 productRoute.post('/uploadProduct',tokenVerification, CheckUserRole(['admin' , 'staff']) ,uploadMiddleware, upload_product)
-productRoute.post('/updateProduct' ,uploadMiddleware, updateProduct)
+productRoute.post('/updateProduct',tokenVerification, CheckUserRole(['admin' , 'staff']) ,uploadMiddleware, updateProduct)
+productRoute.post('/adminApproval' ,uploadMiddleware, adminApproval)
+productRoute.post('/review', CustomerReview)
 
 
 module.exports = productRoute
