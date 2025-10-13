@@ -247,5 +247,16 @@ const CustomerReview = async(req, res)=>{
     res.send("Review Added")
 }
 
+// ====================================get singele product================================ //
+const singeleProduct = async(req, res)=>{
+    const {slug}= req.params
 
-module.exports ={ add_catagory, upload_product, updateProduct,adminApproval, CustomerReview}
+    const ExistProduct = await productSchema.findOne({slug})
+
+    if(!ExistProduct) return res.status(404).send("Product Not Found")
+
+    res.status(200).send(ExistProduct)
+}
+
+
+module.exports ={ add_catagory, upload_product, updateProduct,adminApproval, CustomerReview, singeleProduct}
