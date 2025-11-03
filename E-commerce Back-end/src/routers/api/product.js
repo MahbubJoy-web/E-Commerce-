@@ -1,5 +1,5 @@
 const express = require('express')
-const { add_catagory, upload_product, updateProduct, adminApproval, CustomerReview, singeleProduct } = require('../../Controllers/productController')
+const { add_catagory, upload_product, updateProduct, adminApproval, CustomerReview, singeleProduct, allProduct, deleteProduct } = require('../../Controllers/productController')
 const productRoute = express.Router()
 const multer = require('multer')
 const upload = multer({ dest: 'uploads/' })
@@ -12,7 +12,9 @@ productRoute.post('/uploadProduct',tokenVerification, CheckUserRole(['admin' , '
 productRoute.post('/updateProduct',tokenVerification, CheckUserRole(['admin' , 'staff']) ,uploadMiddleware, updateProduct)
 productRoute.post('/adminApproval' ,uploadMiddleware, adminApproval)
 productRoute.post('/review', CustomerReview)
-productRoute.post('/singleProduct/:slug', singeleProduct)
+productRoute.get('/singleProduct/:slug', singeleProduct)
+productRoute.get('/allProduct', allProduct)
+productRoute.post('/deleteProduct',tokenVerification, CheckUserRole(['admin']) ,deleteProduct)
 
 
 module.exports = productRoute

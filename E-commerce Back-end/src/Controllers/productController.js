@@ -3,7 +3,7 @@ const fs = require('fs');
 const authSchema = require('../model/authSchema');
 const catagorySchema = require('../model/catagorySchema');
 const productSchema = require('../model/productSchema');
-const { generatePublicId, generateSlug, generateOTPNumber } = require('../helpers/allGenarator');
+const { generateSlug, generateOTPNumber } = require('../helpers/allGenarator');
 const { log } = require('console');
 
 const cloudinary = require ('cloudinary').v2 
@@ -36,7 +36,7 @@ const add_catagory =async (req, res)=>{
 
        fs.unlink(req.file.path, (err)=>{
         if(err) console.log(err);
-       })
+       })  
 
     // ======creator details ======== //
     const creatorUser = await authSchema.find({email: req.user.email})
@@ -50,10 +50,9 @@ const add_catagory =async (req, res)=>{
         creatorName : creatorUser[0].userName 
     }).save()
        
-    res.send('done')
+    res.send('Catagory Added')
     
 }
-
 // ======================================UploadProduct ==================================== //
 const upload_product = async(req , res)=>{
     const { productTitle, productTag, productDiscription, productPrice, discountPercent,  productCatagory, stock, varient } = req.body
@@ -104,8 +103,6 @@ const upload_product = async(req , res)=>{
     
     res.send('Product Added')
 }
-// ====================================== Update Product ================================= //
-
 // ====================================== Update Product ================================= //
 const updateProduct = async (req, res) => {
   try {
@@ -257,6 +254,54 @@ const singeleProduct = async(req, res)=>{
 
     res.status(200).send(ExistProduct)
 }
+// ====================================get All product================================ //
+const allProduct =async (req, res)=>{
+  const{ limit , searchItem} = req.query
 
+  const limitNo = limit || 9
 
-module.exports ={ add_catagory, upload_product, updateProduct,adminApproval, CustomerReview, singeleProduct}
+  const searchProduct = {}
+
+  searchItem && (searchProduct.productTitle ={$regex:new RegExp(searchItem, "i")})
+
+  const ExistAllproduct = await productSchema.find(searchProduct).limit(limitNo)
+
+   res.send(ExistAllproduct)
+}
+// ==================================== Delete Product ================================ //
+const deleteProduct =async(req, res)=>{
+  const {slug} = req.body
+
+  const ExistAllproduct = await productSchema.findOneAndDelete({slug})
+  if(!ExistAllproduct) return res.status(404).send("Product Not Found")
+
+      // =================== THUMBNAIL IMAGE ===================
+    if (ExistAllproduct.thumnailImage){
+      // 1️⃣ Delete old image from Cloudinary
+      if (ExistAllproduct.thumnailImage) {
+        const oldThumbnailPublicId = ExistAllproduct.thumnailImage
+          .split("/")
+          .slice(7)
+          .join("/")
+          .split(".")[0];
+        await cloudinary.uploader.destroy(oldThumbnailPublicId);
+      }
+
+    }
+
+    // =================== SUB IMAGES ===================
+    if (ExistAllproduct.subImage) {
+      // ==== Delete old sub images from Cloudinary
+      if (ExistAllproduct.subImage && ExistAllproduct.subImage.length > 0) {
+        await Promise.all(
+          ExistAllproduct.subImage.map(async (img) => {
+            const publicId = img.split("/").slice(7).join("/").split(".")[0];
+            await cloudinary.uploader.destroy(publicId);
+          })
+        );
+      }
+    
+  res.send("Product Deleted")
+}
+}
+module.exports ={ add_catagory, upload_product, updateProduct,adminApproval, CustomerReview, singeleProduct, allProduct, deleteProduct}

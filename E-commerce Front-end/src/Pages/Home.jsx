@@ -1,6 +1,4 @@
-import React from 'react'
-import ChatUserList from '../components/ChatUserList'
-import ChatBox from '../components/Chatbox'
+
 
 const Home = () => {
   return (

@@ -87,11 +87,7 @@ const registration = async (req,res)=>{
     res.status(500).json({ error: err.message });
   }
 }
-
-
-
 // ===============OTP Verification Controller================ //
-
 const OtpVerification = async (req, res) =>{
   const { otp } = req.body
 
@@ -168,6 +164,57 @@ const Login = async (req, res)=>{
 
       res.status(201).send({UserInfo : UserInfo , accessToken : JwtToken})
 }
+// ======================= Single User ======================= //
+const getSingleUser = async(req, res)=>{
+try{
+  const ExistUser = await authSchema.findOne({email: req.user.email}).select('-password -otp -expireOtpTime ')
+  
+  if(!ExistUser) return res. status(404).send('user not Found')
+    res.status(200).send(ExistUser)
+}
+catch(err){
+  console.log("Internal server Error", err);
+  res.send("Internal server Error", err);
+}
+}
+// ======================= Delete staff account ======================= //
+const deleteUser = async(req, res)=>{
+try{
+  const userId = req.body
 
+  const ExistUser = await authSchema.findById(userId)
+  
+  if(!ExistUser) return res. status(404).send('user not Found')
 
-module.exports = {registration , OtpVerification , resnedOtp , Login} 
+  if(ExistUser.userRole === 'admin' ) return res.status(403).send('An Admin can not be Deleted Admin Acount')
+
+  await authSchema.findByIdAndDelete(userId)
+  res.status(200).send('User Deleted Successfully')
+
+}
+catch(err){
+  console.log("Internal server Error", err);
+  res.send("Internal server Error", err);
+}
+}
+// ==================== staff account promote To Admin ==================== //
+const createAdminUserRole = async(req, res)=>{
+try{
+  const {userId} = req.body
+
+  const ExistUser = await authSchema.findByIdAndUpdate(userId , {userRole: 'admin'})
+  
+  if(!ExistUser) return res. status(404).send('user not Found')
+
+  if(ExistUser.userRole === 'admin') return res.send('User is already an Admin')
+
+  res.status(200).send('UserRole Updated Successfully')
+
+}
+catch(err){
+  console.log("Internal server Error", err);
+  res.send("Internal server Error", err);
+}
+}
+
+module.exports = {registration , OtpVerification , resnedOtp , Login, getSingleUser, deleteUser, createAdminUserRole} 

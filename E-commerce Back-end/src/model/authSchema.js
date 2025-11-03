@@ -42,6 +42,6 @@ const authSchema = new mongoose.Schema({
         default : 'user',
         enum : ['user','admin','staff']
     }
-}) 
+} , { timestamps : true }) 
 
 module.exports = mongoose.model('allUser' , authSchema)
