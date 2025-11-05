@@ -1,6 +1,6 @@
 const { generateOTPNumber, getTimeAfter3Minutes } = require("../helpers/allGenarator")
 const { emailRegex, passwordRegex } = require("../helpers/allRegex");
-const { sendOTPEmail } = require("../helpers/otpSender");
+const { mailSender } = require("../helpers/otpSender");
 const authSchema = require("../model/authSchema")
 const bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
@@ -80,7 +80,7 @@ const registration = async (req,res)=>{
     res.status(201).send({ UserInfo });
 
     // send OTP after response
-    sendOTPEmail(email, otpVerificationTemplate(userName, otp));
+    mailSender(email, otpVerificationTemplate(userName, otp));
 
   } catch(err){
     console.error("Registration Error: ", err);
@@ -127,7 +127,7 @@ const resnedOtp = async (req, res) =>{
     existUser.isVerified = false
     existUser.save()
     .then(()=>{
-      sendOTPEmail(email, otpVerificationTemplate(existUser.lastName, otp))
+      mailSender(email, otpVerificationTemplate(existUser.lastName, otp))
     })
 
     res.send('OTP Resend')

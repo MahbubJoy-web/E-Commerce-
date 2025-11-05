@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendOTPEmail = async ( email, template) => {
+const mailSender = async ( email, template) => {
   const info = await transporter.sendMail({
     from: 'Chatting App',
     to: email,
@@ -17,8 +17,6 @@ const sendOTPEmail = async ( email, template) => {
     text: "Hello world?",
     html: template,
   });
-
-  console.log("Message sent:", info.messageId);
 };
 
-module.exports = { sendOTPEmail };
+module.exports = { mailSender };
