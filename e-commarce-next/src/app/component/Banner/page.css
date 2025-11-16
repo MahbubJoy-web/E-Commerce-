@@ -33,7 +33,7 @@
 /* Active dot (li receives .slick-active) — style the button inside */
 .slick-dots li.slick-active button {
   background-color: #0070f3; /* active color */
-  transform: scale(1.3);
+
 }
 
 

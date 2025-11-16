@@ -1,0 +1,14 @@
+.slick-track {
+    display: flex;
+    gap: 20px;
+}
+.slick-dots{
+    margin-top: 40px;
+}
+.slick-dots li.slick-active button {
+  background-color: #111827; /* active color */
+
+}
+.slick-dots li button{
+    background-color: #a5b2c4;
+}
